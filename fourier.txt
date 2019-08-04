@@ -1,0 +1,75 @@
+import numpy as np
+import cv2
+import copy
+
+def mouse(event, x, y, flags, param):
+    
+    global mask,px1,px2,py1,py2
+    
+    rows, cols = img.shape
+    
+    #クリックした点と原点対象な点の座標
+    if event == cv2.EVENT_LBUTTONDOWN:
+        px1 = y
+        py1 = x
+        px2 = rows - px1 - 1
+        py2 = cols - py1 - 1
+        
+        mask = np.zeros((rows, cols))
+        mask[px1, py1] = 1
+        mask[px2, py2] = 1
+
+        print(px1,py1,px2,py2)
+
+        
+def fourie(img):
+    
+    global mask,px1,px2,py1,py2
+    
+    cv2.namedWindow("img",cv2.WINDOW_NORMAL)
+    cv2.namedWindow("ms",cv2.WINDOW_NORMAL)
+    cv2.namedWindow("img_back",cv2.WINDOW_NORMAL)
+    cv2.namedWindow("sum",cv2.WINDOW_NORMAL)
+    
+    cv2.setMouseCallback('img',mouse)
+    
+    px1,py1,px2,py2=0,0,1835,3263
+    img = cv2.imread('picture/picture1.jpg',0)
+    rows, cols = img.shape
+    ifft = np.zeros((rows, cols))
+    
+    while(1):
+        
+        #フーリエ変換
+        f = np.fft.fft2(img)
+        fshift = np.fft.fftshift(f)
+        ms = 20*np.log(np.abs(fshift))
+        ms = ms/(np.max(ms))*2**8
+
+        #ある点での空間領域での波形を出すためのマスク作成
+        mask = np.zeros((rows, cols))
+        mask[px1, py1] = 1
+        mask[px2, py2] = 1
+        mask2 = mask*fshift        
+
+        #ある点での空間領域での波形
+        f_ishift = np.fft.ifftshift(mask2)
+        mask2 = np.fft.ifft2(f_ishift)
+        mask2 = np.abs(mask2)
+        
+        #波形の重ね合わせ
+        ifft = ifft + mask2
+        
+        cv2.imshow("img",img)
+        cv2.imshow("ms",ms.astype(np.uint8))
+        cv2.imshow("img_back",mask2)
+        cv2.imshow("sum",ifft)
+        
+        k=cv2.waitKey(1) & 0xFF
+        if k ==27:
+            break
+
+    cv2.destroyAllWindows()
+    
+img = cv2.imread('picture/picture1.jpg',0)
+tes=fourie(img)
